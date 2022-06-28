@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <title>고양이 가라사대</title>
+</head>
+<style>
+  body {
+    text-align: center;
+  }
+
+  .main-card button {
+    position: relative;
+    left: -45px;
+    bottom: 15px;
+  }
+
+  .favorites {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .favorites img {
+    width: 150px;
+  }
+
+  .errorMessage {
+    color: red;
+  }
+</style>
+
+<body>
+  <div id="app"></div>
+
+  <script type="text/babel">
+
+    const Title = (props) => (
+      <h1>{props.children}</h1>
+    )
+
+    const Favorties = (props) => (
+      <ul className="favorites">
+        {props.favorites.map((cat, idx) => {
+          return (
+            <CatItem img={cat} key={idx} />
+          );
+        })}
+      </ul>
+
+    )
+
+    const SubmitForm = ({ updateMainCat }) => {
+      const [value, setValue] = React.useState('');
+      const [errorMessage, setErrorMessage] = React.useState('');
+      const includesHangul = (text) => /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/i.test(text);
+
+      function handleToUpperCase(e) {
+        setErrorMessage(includesHangul(e.target.value) ? "한글 입력 불가" : '');
+        setValue(e.target.value.toUpperCase());
+      }
+
+      return (
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (value === '') {
+            setErrorMessage("빈 값 입력 불가");
+            return false;
+          }
+
+          updateMainCat();
+        }}>
+          <input type="text" name="name" placeholder="영어 대사를 입력해주세요" onChange={handleToUpperCase} value={value} />
+          <p className="errorMessage" >{errorMessage}</p>
+          <button type="submit">생성</button>
+        </form >
+      );
+    };
+
+    const MainCard = (props) => {
+      // 리액트에선 on 이벤트 걸 때 handle 로 시작하는게 관례
+      return (
+        < div className="main-card" >
+          <img src={props.catImg} alt="고양이" width="400" />
+          <button onClick={props.onHandleHeartClick}>🤍</button>
+        </div >
+      );
+    };
+
+    const CatItem = ({ img }) => (
+      <li>
+        <img src={img}></img>
+      </li>
+    );
+
+    const App = () => {
+      const [counter, setCounter] = React.useState(1);
+      const [catImg, setCatImg] = React.useState("https://cataas.com/cat/60b73094e04e18001194a309/says/react");
+      const catImgList = [
+        "https://cataas.com/cat/60b73094e04e18001194a309/says/react",
+        "https://cataas.com//cat/5e9970351b7a400011744233/says/inflearn",
+        "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript"
+      ];
+      const [favorites, setFavorites] = React.useState(JSON.parse(localStorage.getItem("favorites") || '[]'));
+      function updateMainCat() {
+        setCounter(counter < 3 ? counter + 1 : 1);
+        setCatImg(catImgList[counter < 3 ? counter : 0]);
+      }
+
+      // 리액트에선 props로 이벤트를 넘길때는  onHandle 로 시작하는게 관례
+      function onHandleHeartClick() {
+        const localFavorites = [...new Set([...favorites, catImgList[counter - 1]])];
+        localStorage.setItem("favorites", JSON.stringify(localFavorites));
+        setFavorites(localFavorites);
+      }
+
+      return (
+        <div>
+          <Title>{counter}번째 고양이 가라사대</Title>
+          <SubmitForm updateMainCat={updateMainCat} />
+          <MainCard catImg={catImg} onHandleHeartClick={onHandleHeartClick} />
+          <Favorties favorites={favorites} />
+        </div>
+      );
+    };
+
+    const renderHere = document.getElementById("app");
+    ReactDOM.render(<App />, renderHere);
+  </script>
+</body>
+
+</html>
