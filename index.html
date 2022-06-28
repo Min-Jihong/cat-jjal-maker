@@ -76,6 +76,11 @@
             return false;
           }
 
+          if (includesHangul(value)) {
+            setErrorMessage("한글 입력 불가");
+            return false;
+          }
+
           updateMainCat();
         }}>
           <input type="text" name="name" placeholder="영어 대사를 입력해주세요" onChange={handleToUpperCase} value={value} />
