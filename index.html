@@ -47,17 +47,23 @@
       <h1>{props.children}</h1>
     )
 
-    const Favorties = (props) => (
-      <ul className="favorites">
-        {props.favorites.map((cat, idx) => {
-          return (
-            <CatItem img={cat} key={idx} />
-          );
-        })}
-      </ul>
+    const Favorties = (props) => {
+      if (props.favorites.length === 0) {
+        return <div>사진 위 하트를 눌러 고양이를 저장해보세요</div>;
+      }
 
-    )
+      return (
+        <ul className="favorites">
+          {
 
+            props.favorites.map((cat, idx) => {
+              return (
+                <CatItem img={cat} key={idx} />
+              );
+            })}
+        </ul>
+      );
+    }
     const SubmitForm = ({ updateMainCat }) => {
       const [value, setValue] = React.useState('');
       const [errorMessage, setErrorMessage] = React.useState('');
@@ -81,7 +87,7 @@
             return false;
           }
 
-          updateMainCat();
+          updateMainCat(value);
         }}>
           <input type="text" name="name" placeholder="영어 대사를 입력해주세요" onChange={handleToUpperCase} value={value} />
           <p className="errorMessage" >{errorMessage}</p>
@@ -92,10 +98,11 @@
 
     const MainCard = (props) => {
       // 리액트에선 on 이벤트 걸 때 handle 로 시작하는게 관례
+      const heartIcon = props.alreayFavorite ? "💖" : "🤍";
       return (
         < div className="main-card" >
           <img src={props.catImg} alt="고양이" width="400" />
-          <button onClick={props.onHandleHeartClick}>🤍</button>
+          <button onClick={props.onHandleHeartClick}>{heartIcon}</button>
         </div >
       );
     };
@@ -107,31 +114,50 @@
     );
 
     const App = () => {
-      const [counter, setCounter] = React.useState(1);
-      const [catImg, setCatImg] = React.useState("https://cataas.com/cat/60b73094e04e18001194a309/says/react");
-      const catImgList = [
-        "https://cataas.com/cat/60b73094e04e18001194a309/says/react",
-        "https://cataas.com//cat/5e9970351b7a400011744233/says/inflearn",
-        "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript"
-      ];
-      const [favorites, setFavorites] = React.useState(JSON.parse(localStorage.getItem("favorites") || '[]'));
-      function updateMainCat() {
-        setCounter(counter < 3 ? counter + 1 : 1);
-        setCatImg(catImgList[counter < 3 ? counter : 0]);
+      const [counter, setCounter] = React.useState(0);
+      const [catImg, setCatImg] = React.useState('');
+      const [favorites, setFavorites] = React.useState(() => {
+        return JSON.parse(localStorage.getItem("favorites") || '[]');
+      });
+      const alreayFavorite = favorites.includes(catImg);
+      const title = counter ? counter + '번째 ' : '';
+      async function setInitialCat() {
+        const newCat = await fetchCat('First cat');
+        setCatImg(newCat);
       }
+
+      // 배열 안에 변수를 넣어두면 변수 값이 바뀔 때만 변경됨
+      React.useEffect(() => {
+        setInitialCat();
+      }, []);
+
+      async function updateMainCat(value) {
+        const newCat = await fetchCat(value);
+        setCatImg(newCat);
+        setCounter((prev) => {
+          return prev + 1;
+        });
+      }
+
+      const fetchCat = async (text) => {
+        const OPEN_API_DOMAIN = "https://cataas.com";
+        const response = await fetch(`${OPEN_API_DOMAIN}/cat/says/${text}?json=true`);
+        const responseJson = await response.json();
+        return `${OPEN_API_DOMAIN}/${responseJson.url}`;
+      };
 
       // 리액트에선 props로 이벤트를 넘길때는  onHandle 로 시작하는게 관례
       function onHandleHeartClick() {
-        const localFavorites = [...new Set([...favorites, catImgList[counter - 1]])];
+        const localFavorites = [...new Set([...favorites, catImg])];
         localStorage.setItem("favorites", JSON.stringify(localFavorites));
         setFavorites(localFavorites);
       }
 
       return (
         <div>
-          <Title>{counter}번째 고양이 가라사대</Title>
+          <Title>{title}고양이 가라사대</Title>
           <SubmitForm updateMainCat={updateMainCat} />
-          <MainCard catImg={catImg} onHandleHeartClick={onHandleHeartClick} />
+          <MainCard alreayFavorite={alreayFavorite} catImg={catImg} onHandleHeartClick={onHandleHeartClick} />
           <Favorties favorites={favorites} />
         </div>
       );
